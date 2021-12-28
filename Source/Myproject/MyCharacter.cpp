@@ -16,6 +16,7 @@
 #include "MyAnimInstance.h"
 #include "DrawDebugHelpers.h"
 #include "MyWeapon.h"
+#include "MyCharacterStatComponent.h"
 
 // Sets default values
 AMyCharacter::AMyCharacter()
@@ -24,6 +25,7 @@ AMyCharacter::AMyCharacter()
 	PrimaryActorTick.bCanEverTick = true;
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
+	CharacterStat = CreateDefaultSubobject<UMyCharacterStatComponent>(TEXT("CHARACTERSTAT"));
 
 	SpringArm->SetupAttachment(GetCapsuleComponent());
 	Camera->SetupAttachment(SpringArm);
@@ -222,18 +224,27 @@ void AMyCharacter::PostInitializeComponents()
 		}
 	});
 	MyAnim->OnAttackHitCheck.AddUObject(this, &AMyCharacter::AttackCheck);
+
+
+	CharacterStat->OnHPIsZero.AddLambda([this]() -> void {
+		MyAnim->SetDeadAnim();
+		SetActorEnableCollision(false);
+
+
+	});
 }
 
 float AMyCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	float FinalDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
-	if (FinalDamage > 0.0f)
-	{
-		MyAnim->SetDeadAnim();
-		SetActorEnableCollision(false);
-	}
-
+	//if (FinalDamage > 0.0f)
+	//{
+	//	MyAnim->SetDeadAnim();
+	//	SetActorEnableCollision(false);
+	//}
+	
+	CharacterStat->SetDamage(FinalDamage);
 	return FinalDamage;
 }
 
@@ -354,7 +365,7 @@ void AMyCharacter::AttackCheck()
 		if (HitResult.Actor.IsValid())
 		{
 			FDamageEvent DamageEvent;
-			HitResult.Actor->TakeDamage(50.0f, DamageEvent, GetController(), this);
+			HitResult.Actor->TakeDamage(CharacterStat->GetAttack(), DamageEvent, GetController(), this);
 
 		}
 	}

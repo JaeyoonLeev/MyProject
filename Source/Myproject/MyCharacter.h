@@ -59,6 +59,9 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 	class UCameraComponent* Camera;
 
+	UPROPERTY(VisibleAnywhere, Category = Stat)
+	class UMyCharacterStatComponent* CharacterStat;
+
 	void UpDown(float NewAxisValue);
 	
 	void LeftRight(float NewAxisValue);
