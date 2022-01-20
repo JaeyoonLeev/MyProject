@@ -59,6 +59,9 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 	class UCameraComponent* Camera;
 
+	UPROPERTY(VIsibleANywhere, Category = UI)
+	class UWidgetComponent* HPBarWidget;
+
 	UPROPERTY(VisibleAnywhere, Category = Stat)
 	class UMyCharacterStatComponent* CharacterStat;
 
@@ -81,6 +84,9 @@ public:
 	void AttackStartComboState();
 	void AttackEndComboState();
 	void AttackCheck();
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Building)
+	class UBuildManagerComponent* BuildManager;
 
 private:
 

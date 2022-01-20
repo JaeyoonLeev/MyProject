@@ -17,6 +17,9 @@
 #include "DrawDebugHelpers.h"
 #include "MyWeapon.h"
 #include "MyCharacterStatComponent.h"
+#include "BuildManagerComponent.h"
+#include "Components/WidgetComponent.h"
+#include "MyCharacterWidget.h"
 
 // Sets default values
 AMyCharacter::AMyCharacter()
@@ -26,14 +29,19 @@ AMyCharacter::AMyCharacter()
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	CharacterStat = CreateDefaultSubobject<UMyCharacterStatComponent>(TEXT("CHARACTERSTAT"));
+	BuildManager = CreateDefaultSubobject<UBuildManagerComponent>(TEXT("BuildManager"));
+	HPBarWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("HPBARWIDGET"));
+
 
 	SpringArm->SetupAttachment(GetCapsuleComponent());
 	Camera->SetupAttachment(SpringArm);
+	HPBarWidget->SetupAttachment(GetMesh());
 
 	GetMesh()->SetRelativeLocationAndRotation(FVector(0, 0, -88.0f), FRotator(0, -90, 0));
 	SpringArm->TargetArmLength = 400.0f;
 	SpringArm->SetRelativeRotation(FRotator(-15.0f, 0.0f, 0.0f));
 	SpringArm->bUsePawnControlRotation = true;
+
 
 
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> SK_Medea02(TEXT("/Game/Medea/mesh/SK_Medea02"));
@@ -49,6 +57,15 @@ AMyCharacter::AMyCharacter()
 	if (WARRIOR_ANIM.Succeeded())
 	{
 		GetMesh()->SetAnimInstanceClass(WARRIOR_ANIM.Class);
+	}
+
+	HPBarWidget->SetRelativeLocation(FVector(0.0f, 0.0f, 180.0f));
+	HPBarWidget->SetWidgetSpace(EWidgetSpace::Screen);
+	static ConstructorHelpers::FClassFinder<UUserWidget> UI_HUD(TEXT("/Game/UI/UI_HPBar.UI_HPBar_C"));
+	if (UI_HUD.Succeeded())
+	{
+		HPBarWidget->SetWidgetClass(UI_HUD.Class);
+		HPBarWidget->SetDrawSize(FVector2D(150.0f, 50.0f));
 	}
 
 	FName WeaponSocket(TEXT("ik_hand_sword"));
@@ -77,6 +94,7 @@ AMyCharacter::AMyCharacter()
 	AttackRange = 200.0f;
 	AttackRadius = 50.0f;
 
+
 }
 
 // Called when the game starts or when spawned
@@ -85,6 +103,12 @@ void AMyCharacter::BeginPlay()
 	Super::BeginPlay();
 	
 	FName WeaponSocket(TEXT("ik_hand_sword"));
+
+	auto CharacterWidget = Cast<UMyCharacterWidget>(HPBarWidget->GetUserWidgetObject());
+	if (nullptr != CharacterWidget)
+	{
+		CharacterWidget->BindCharacterStat(CharacterStat);
+	}
 	//auto CurWeapon = GetWorld()->SpawnActor<AMyWeapon>(FVector::ZeroVector, FRotator::ZeroRotator);
 	//if (nullptr != CurWeapon)
 	//{
@@ -200,7 +224,8 @@ void AMyCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputC
 	InputComponent->BindAxis("LookUp", this, &AMyCharacter::LookUp);
 	InputComponent->BindAxis("Turn", this, &AMyCharacter::Turn);
 	
-
+	InputComponent->BindAction("ToggleBuildMode", IE_Pressed, BuildManager, &UBuildManagerComponent::ToggleBuildMode);
+	InputComponent->BindAction("RequestBuild", IE_Pressed, BuildManager, &UBuildManagerComponent::RequestBuild);
 }
 
 void AMyCharacter::PostInitializeComponents()
@@ -232,6 +257,12 @@ void AMyCharacter::PostInitializeComponents()
 
 
 	});
+
+	//auto CharacterWidget = Cast<UMyCharacterWidget>(HPBarWidget->GetUserWidgetObject());
+	//if (nullptr != CharacterWidget)
+	//{
+	//	CharacterWidget->BindCharacterStat(CharacterStat);
+	//}
 }
 
 float AMyCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
@@ -288,6 +319,9 @@ void AMyCharacter::Attack()
 
 	//MyAnim->PlayAttackMontage();
 	//IsAttacking = true;
+
+	
+
 
 	if (IsAttacking)
 	{
